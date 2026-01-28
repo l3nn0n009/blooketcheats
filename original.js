@@ -31,6 +31,7 @@
             const checkNode = (fiber) => {
                 if (!fiber) return null;
                 if (fiber.child?._owner?.stateNode) return fiber.child._owner.stateNode;
+                if (fiber.memoizedProps?.children?._owner?.stateNode) return fiber.memoizedProps.children._owner.stateNode;
                 if (fiber.return?.stateNode && fiber.return.stateNode?.props?.client) return fiber.return.stateNode;
                 return null;
             };
@@ -50,13 +51,15 @@
 
             // 2. Fallback: Recursive search
             function search(node, depth) {
-                if (!node || depth > 3) return null;
+                if (!node || depth > 6) return null; // Increased depth
                 let fiber = getReactFiber(node);
                 let state = checkNode(fiber);
                 if (state) return state;
-                for (let child of node.children) {
-                    let res = search(child, depth + 1);
-                    if (res) return res;
+                if (node.children) {
+                    for (let child of node.children) {
+                        let res = search(child, depth + 1);
+                        if (res) return res;
+                    }
                 }
                 return null;
             }
@@ -72,8 +75,31 @@
     }
 
     function getPhaserScene() {
-        const state = getGameState();
-        return state?.game?.current?.scene?.scenes?.[0] || null;
+        try {
+            const state = getGameState();
+            const scene = state?.game?.current?.scene?.scenes?.[0];
+            if (scene) return scene;
+        } catch (e) {
+            console.error("error getting scene", e);
+        }
+        console.warn("Blooket Cheats: Phaser Scene not found. Returning shim.");
+        return {
+            physics: {
+                world: {
+                    colliders: { _active: [], find: () => null },
+                    bodies: { entries: [] }
+                }
+            },
+            game: {
+                events: {
+                    _events: { respawn: { fn: () => { } } },
+                    emit: () => { }
+                }
+            },
+            children: { entries: [] },
+            input: { keyboard: { on: () => { } } },
+            add: { image: () => ({ setDepth: () => { }, setScale: () => { } }) }
+        };
     }
 
     function l(e, t = {}, ...a) {
