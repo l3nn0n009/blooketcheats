@@ -156,12 +156,22 @@
                 } catch (e) { }
             }
             // 5. Try Phaser global repository (Confirmed Phaser v3.90.0 exists)
-            if (window.Phaser && window.Phaser.GAMES && window.Phaser.GAMES.length > 0) {
+            // The game IS created via new Phaser.Game, so it MUST be in this array eventually.
+            if (window.Phaser && window.Phaser.GAMES) {
+                // Return the first active game that has scenes
                 for (let game of window.Phaser.GAMES) {
                     if (game.scene && game.scene.scenes && game.scene.scenes.length > 0) {
-                        // Find the active running scene
+                        // Priority 1: Find a scene that is both visible and active (the actual game level)
+                        const runningScene = game.scene.scenes.find(s =>
+                            s.sys && s.sys.settings && s.sys.settings.active && s.sys.settings.visible
+                        );
+                        if (runningScene) return runningScene;
+
+                        // Priority 2: Find just an active scene (maybe logic only)
                         const activeScene = game.scene.scenes.find(s => s.sys && s.sys.settings && s.sys.settings.active);
                         if (activeScene) return activeScene;
+
+                        // Fallback: Just return the first one
                         return game.scene.scenes[0];
                     }
                 }
