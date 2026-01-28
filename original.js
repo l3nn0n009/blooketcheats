@@ -20,6 +20,61 @@
         document.head.appendChild(link);
     })()
 
+    function getGameState() {
+        try {
+            const getReactFiber = (node) => {
+                if (!node) return null;
+                const key = Object.keys(node).find(k => k.startsWith("__reactFiber") || k.startsWith("__reactInternalInstance"));
+                return key ? node[key] : null;
+            };
+
+            const checkNode = (fiber) => {
+                if (!fiber) return null;
+                if (fiber.child?._owner?.stateNode) return fiber.child._owner.stateNode;
+                if (fiber.return?.stateNode && fiber.return.stateNode?.props?.client) return fiber.return.stateNode;
+                return null;
+            };
+
+            // 1. Try known paths
+            let nodes = [
+                document.querySelector("#app > div > div"),
+                document.querySelector("body > div > div")
+            ];
+
+            for (let node of nodes) {
+                if (!node) continue;
+                let fiber = getReactFiber(node);
+                let state = checkNode(fiber);
+                if (state) return state;
+            }
+
+            // 2. Fallback: Recursive search
+            function search(node, depth) {
+                if (!node || depth > 3) return null;
+                let fiber = getReactFiber(node);
+                let state = checkNode(fiber);
+                if (state) return state;
+                for (let child of node.children) {
+                    let res = search(child, depth + 1);
+                    if (res) return res;
+                }
+                return null;
+            }
+
+            let res = search(document.querySelector("body > div"), 0);
+            if (res) return res;
+
+            return {};
+        } catch (e) {
+            console.error("Blooket Cheat Error:", e);
+            return {};
+        }
+    }
+
+    function getPhaserScene() {
+        const state = getGameState();
+        return state?.game?.current?.scene?.scenes?.[0] || null;
+    }
 
     function l(e, t = {}, ...a) {
         var o = document.createElement(e);
@@ -519,20 +574,26 @@
             data: null,
             run: function () {
                 this.enabled ? (this.enabled = !1, clearInterval(this.data), this.data = null) : (this.enabled = !0, this.data = setInterval(() => {
-                    var {
-                        state: {
-                            question: e,
-                            stage: t,
-                            feedback: a
-                        },
-                        props: {
-                            client: {
-                                question: o
-                            }
-                        }
-                    } = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
-                    let r = e || o;
                     try {
+                        let gs = getGameState();
+                        if (!gs) return;
+
+                        var {
+                            state: {
+                                question: e,
+                                stage: t,
+                                feedback: a
+                            } = {},
+                            props: {
+                                client: {
+                                    question: o
+                                } = {}
+                            } = {}
+                        } = gs;
+
+                        let r = e || o;
+                        if (!r) return;
+
                         "typing" != r.qType ? ("feedback" === t || a ? document.querySelector('[class*="feedback"]')?.firstChild : [...document.querySelectorAll('[class*="answerContainer"]')][r.answers.map((e, t) => r.correctAnswers.includes(e) ? t : null).filter(e => null != e)[0]])?.click?.() : Object.values(document.querySelector("[class*='typingAnswerWrapper']"))[1].children._owner.stateNode.sendAnswer(r.answers[0])
                     } catch { }
                 }, 50))
@@ -1333,7 +1394,7 @@
                             question: o
                         }
                     }
-                } = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                } = getGameState();
                 try {
                     "typing" != e.qType ? ("feedback" === t || a ? document.querySelector('[class*="feedback"]')?.firstChild : [...document.querySelectorAll('[class*="answerContainer"]')][(e || o).answers.map((t, a) => (e || o).correctAnswers.includes(t) ? a : null).filter(e => null != e)[0]])?.click?.() : Object.values(document.querySelector("[class*='typingAnswerWrapper']"))[1].children._owner.stateNode.sendAnswer(e.answers[0])
                 } catch { }
@@ -1807,7 +1868,7 @@
             name: "Remove Random Name",
             description: "Allows you to put a custom name",
             run: function () {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                getGameState().setState({
                     isRandom: !1,
                     client: {
                         name: ""
@@ -1953,7 +2014,7 @@
             description: "Crashes the Host's Game for Pirate's Voyage",
             run: function () {
                 function reactHandler() {
-                    return Object.values(document.querySelector('#app>div>div'))[1].children[0]._owner;
+                    return { stateNode: getGameState() };
                 }
 
 
@@ -2237,7 +2298,7 @@
             name: "Double Enemy XP",
             description: "Doubles enemy XP drop value",
             run: function () {
-                for (let e of Object.values(document.querySelector("#app > div > div"))[1].children[0]._owner.stateNode.game.current.scene.scenes[0].physics.world.colliders._active.filter(e => e.callbackContext?.toString().includes("invulnerableTime"))) {
+                for (let e of getPhaserScene().physics.world.colliders._active.filter(e => e.callbackContext?.toString().includes("invulnerableTime"))) {
                     var t = e.object2;
                     let a = t.classType.prototype.start;
                     t.classType.prototype.start = function () {
@@ -2251,7 +2312,7 @@
             name: "Half Enemy Speed",
             description: "Makes enemies move 2x slower",
             run: function () {
-                for (let e of Object.values(document.querySelector("#app > div > div"))[1].children[0]._owner.stateNode.game.current.scene.scenes[0].physics.world.colliders._active.filter(e => e.callbackContext?.toString().includes("invulnerableTime"))) {
+                for (let e of getPhaserScene().physics.world.colliders._active.filter(e => e.callbackContext?.toString().includes("invulnerableTime"))) {
                     var t = e.object2;
                     let a = t.classType.prototype.start;
                     t.classType.prototype.start = function () {
@@ -2265,7 +2326,7 @@
             name: "Instant Kill",
             description: "Sets all enemies health to 1",
             run: function () {
-                for (let e of Object.values(document.querySelector("#app > div > div"))[1].children[0]._owner.stateNode.game.current.scene.scenes[0].physics.world.colliders._active.filter(e => e.callbackContext?.toString().includes("invulnerableTime"))) {
+                for (let e of getPhaserScene().physics.world.colliders._active.filter(e => e.callbackContext?.toString().includes("invulnerableTime"))) {
                     var t = e.object2;
                     let a = t.classType.prototype.start;
                     t.classType.prototype.start = function () {
@@ -2279,14 +2340,14 @@
             name: "Invincibility",
             description: "Makes you invincible",
             run: function () {
-                for (let e of Object.values(document.querySelector("#app > div > div"))[1].children[0]._owner.stateNode.game.current.scene.scenes[0].physics.world.colliders._active.filter(e => e.callbackContext?.toString().includes("invulnerableTime")))
+                for (let e of getPhaserScene().physics.world.colliders._active.filter(e => e.callbackContext?.toString().includes("invulnerableTime")))
                     e.collideCallback = () => { }
             }
         }, {
             name: "Magnet",
             description: "Pulls all xp towards you",
             run: function () {
-                Object.values(document.querySelector("#app > div > div"))[1].children[0]._owner.stateNode.game.current.scene.scenes[0].physics.world.colliders._active.find(e => e.collideCallback?.toString().includes("magnetTime")).collideCallback({
+                getPhaserScene().physics.world.colliders._active.find(e => e.collideCallback?.toString().includes("magnetTime")).collideCallback({
                     active: !0
                 }, {
                     active: !0,
@@ -2298,7 +2359,7 @@
             name: "Max Current Abilities",
             description: "Maxes out all your current abilities",
             run: function () {
-                let e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                let e = getGameState();
                 for (var [t, a] of Object.entries(e.state.abilities))
                     for (let o = 0; o < 10 - a; o++)
                         e.game.current.scene.scenes[0].game.events.emit("level up", t, e.state.abilities[t]++);
@@ -2310,7 +2371,7 @@
             name: "Next Level",
             description: "Skips to the next level",
             run: function () {
-                var e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode,
+                var e = getGameState(),
                     {
                         object1: t,
                         object2: a
@@ -2321,7 +2382,7 @@
             name: "Remove Obstacles",
             description: "Removes all rocks and obstacles",
             run: function () {
-                Object.values(document.querySelector("#app > div > div"))[1].children[0]._owner.stateNode.game.current.scene.scenes[0].physics.world.bodies.entries.forEach(e => {
+                getPhaserScene().physics.world.bodies.entries.forEach(e => {
                     try {
                         e.gameObject.frame.texture.key.includes("obstacle") && e.gameObject.destroy()
                     } catch { }
@@ -2331,20 +2392,20 @@
             name: "Kill Enemies",
             description: "Kills all current enemies",
             run: function () {
-                Object.values(document.querySelector("#app > div > div"))[1].children[0]._owner.stateNode.game.current.scene.scenes[0].physics.world.bodies.entries.forEach(e => e?.gameObject?.receiveDamage?.(e.gameObject.hp, 1))
+                getPhaserScene().physics.world.bodies.entries.forEach(e => e?.gameObject?.receiveDamage?.(e.gameObject.hp, 1))
             }
         }, {
             name: "Reset Health",
             description: "Resets health and gives invincibility for 3 seconds",
             run: function () {
-                Object.values(document.querySelector("#app > div > div"))[1].children[0]._owner.stateNode.game.current.scene.scenes[0].game.events._events.respawn.fn()
+                getPhaserScene().game.events._events.respawn.fn()
             }
         }, {
             name: "Crash Host (Brawl)",
             description: "Crashes the Host's Game for Monster Brawl",
             run: function () {
                 function reactHandler() {
-                    return Object.values(document.querySelector('#app>div>div'))[1].children[0]._owner;
+                    return { stateNode: getGameState() };
                 }
 
 
@@ -2366,7 +2427,7 @@
                 type: "number"
             }],
             run: function (e) {
-                var t = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var t = getGameState();
                 t.setState({
                     xp: e,
                     totalXp: e
@@ -2389,7 +2450,7 @@
                 type: "number"
             }],
             run: function (e) {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                getGameState().setState({
                     level: e
                 })
             }
@@ -2402,7 +2463,7 @@
                 document.body.append(e),
                     window.alert = e.contentWindow.alert.bind(window),
                     e.remove(),
-                    "/cafe/shop" !== window.location.pathname ? alert("This can only be run in the shop") : (e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode).setState({
+                    "/cafe/shop" !== window.location.pathname ? alert("This can only be run in the shop") : (e = getGameState()).setState({
                         items: Object.fromEntries(Object.entries(e.state.items).map(e => [e[0], 5]))
                     })
             }
@@ -2410,7 +2471,7 @@
             name: "Remove Customers",
             description: "Skips the current customers (Not usable in the shop)",
             run: function () {
-                let e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                let e = getGameState();
                 e.state.customers.forEach((t, a) => Object.keys(t).length && e.removeCustomer(a, !0))
             }
         }, {
@@ -2421,7 +2482,7 @@
                 document.body.append(e),
                     window.alert = e.contentWindow.alert.bind(window),
                     e.remove(),
-                    "/cafe/shop" !== window.location.pathname ? alert("This can only be run in the shop") : (e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode).setState({
+                    "/cafe/shop" !== window.location.pathname ? alert("This can only be run in the shop") : (e = getGameState()).setState({
                         abilities: Object.fromEntries(Object.entries(e.state.abilities).map(e => [e[0], 5]))
                     })
             }
@@ -2433,7 +2494,7 @@
                 type: "number"
             }],
             run: function (e) {
-                var t = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var t = getGameState();
                 t.setState({
                     cafeCash: e
                 }),
@@ -2524,7 +2585,7 @@
             }],
             run: function (playerName) {
                 function reactHandler() {
-                    return Object.values(document.querySelector('#app>div>div'))[1].children[0]._owner;
+                    return { stateNode: getGameState() };
                 }
 
 
@@ -2555,7 +2616,7 @@
                 document.body.append(e),
                     window.alert = e.contentWindow.alert.bind(window),
                     e.remove(),
-                    "/cafe" !== window.location.pathname ? alert("This can't be run in the shop") : (e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode).setState({
+                    "/cafe" !== window.location.pathname ? alert("This can't be run in the shop") : (e = getGameState()).setState({
                         foods: e.state.foods.map(e => ({
                             ...e,
                             stock: 99,
@@ -2625,7 +2686,7 @@
             enabled: !1,
             data: null,
             run: function () {
-                this.enabled ? (this.enabled = !1, clearInterval(this.data), this.data = null) : (this.enabled = !0, this.data = setInterval(() => Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                this.enabled ? (this.enabled = !1, clearInterval(this.data), this.data = null) : (this.enabled = !0, this.data = setInterval(() => getGameState().setState({
                     choices: [{
                         type: "mult",
                         val: 3,
@@ -2642,7 +2703,7 @@
             enabled: !1,
             data: null,
             run: function () {
-                this.enabled ? (this.enabled = !1, clearInterval(this.data), this.data = null) : (this.enabled = !0, this.data = setInterval(() => Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                this.enabled ? (this.enabled = !1, clearInterval(this.data), this.data = null) : (this.enabled = !0, this.data = setInterval(() => getGameState().setState({
                     choices: [{
                         type: "mult",
                         val: 5,
@@ -2659,7 +2720,7 @@
             enabled: !1,
             data: null,
             run: function () {
-                this.enabled ? (this.enabled = !1, clearInterval(this.data), this.data = null) : (this.enabled = !0, this.data = setInterval(() => Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                this.enabled ? (this.enabled = !1, clearInterval(this.data), this.data = null) : (this.enabled = !0, this.data = setInterval(() => getGameState().setState({
                     choices: [{
                         type: "hack",
                         val: 3,
@@ -2716,7 +2777,7 @@
                 }
 
 
-                var t = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var t = getGameState();
 
 
                 if (this.enabled) {
@@ -2820,7 +2881,7 @@
             description: "Crashes the Host's Game for Crypto Hack",
             run: function () {
                 function reactHandler() {
-                    return Object.values(document.querySelector('#app>div>div'))[1].children[0]._owner;
+                    return { stateNode: getGameState() };
                 }
 
 
@@ -2842,7 +2903,7 @@
                 type: "number"
             }],
             run: function (e) {
-                var t = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var t = getGameState();
                 t.setState({
                     crypto: e,
                     crypto2: e
@@ -2860,7 +2921,7 @@
                 type: "string"
             }],
             run: function (e) {
-                var t = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var t = getGameState();
                 t.setState({
                     password: e
                 }),
@@ -2897,12 +2958,12 @@
                 name: "Player",
                 type: "options",
                 options() {
-                    let e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                    let e = getGameState();
                     return new Promise(t => e.props.liveGameController._liveApp ? e.props.liveGameController.getDatabaseVal("c", e => e && t(Object.keys(e))) : t([]))
                 }
             }],
             run: function (e) {
-                let t = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                let t = getGameState();
                 t.props.liveGameController.getDatabaseVal("c", a => {
                     var o;
                     a && Object.keys(a).map(e => e.toLowerCase()).includes(e.toLowerCase()) && ([a, {
@@ -2928,7 +2989,7 @@
                 name: "Player",
                 type: "options",
                 options() {
-                    let e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                    let e = getGameState();
                     return new Promise(t => e.props.liveGameController._liveApp ? e.props.liveGameController.getDatabaseVal("c", e => e && t(Object.keys(e))) : t([]))
                 }
             }],
@@ -3040,7 +3101,7 @@
             name: "Earthquake",
             description: "Shuffles around towers",
             run: function () {
-                let e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode,
+                let e = getGameState(),
                     t = (e.setState({
                         eventName: "Earthquake",
                         event: {
@@ -3072,7 +3133,7 @@
             name: "Max Tower Stats",
             description: "Makes all placed towers overpowered",
             run: function () {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.towers.forEach(e => {
+                getGameState().towers.forEach(e => {
                     e.range = 100,
                         e.fullCd = e.cd = 0,
                         e.damage = 1e6
@@ -3085,7 +3146,7 @@
                 let {
                     ducks: e,
                     tiles: t
-                } = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                } = getGameState();
                 e.forEach(e => {
                     t[e.y][e.x] = 0
                 }),
@@ -3103,14 +3164,14 @@
             name: "Remove Enemies",
             description: "Removes all the enemies",
             run: function () {
-                var e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var e = getGameState();
                 e.enemies = e.futureEnemies = []
             }
         }, {
             name: "Remove Obstacles",
             description: "Lets you place towers anywhere",
             run: function () {
-                var e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var e = getGameState();
                 e.tiles = e.tiles.map(e => e.fill(0))
             }
         }, {
@@ -3121,7 +3182,7 @@
                 type: "number"
             }],
             run: function (e) {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.dmg = e
+                getGameState().dmg = e
             }
         }, {
             name: "Set Round",
@@ -3131,7 +3192,7 @@
                 type: "number"
             }],
             run: function (e) {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                getGameState().setState({
                     round: e
                 })
             }
@@ -3143,7 +3204,7 @@
                 type: "number"
             }],
             run: function (e) {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                getGameState().setState({
                     tokens: e
                 })
             }
@@ -3152,7 +3213,7 @@
             name: "Max Tower Stats",
             description: "Makes all placed towers overpowered",
             run: function () {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.state.towers.forEach(e => {
+                getGameState().state.towers.forEach(e => {
                     if (e.stats.dmg = 1e6, e.stats.fireRate = 50, e.stats.ghostDetect = !0, e.stats.maxTargets = 1e6, e.stats.numProjectiles &&= 100, e.stats.range = 100, e.stats.auraBuffs)
                         for (let t in e.stats.auraBuffs)
                             e.stats.auraBuffs[t] *= 100
@@ -3162,7 +3223,7 @@
             name: "Kill Enemies",
             description: "Kills all the enemies",
             run: function () {
-                var e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var e = getGameState();
                 e.game.current.scene.scenes[0].enemyQueue.length = 0,
                     e.game.current.scene.scenes[0].physics.world.bodies.entries.forEach(e => e?.gameObject?.receiveDamage?.(e.gameObject.hp, 1))
             }
@@ -3171,7 +3232,7 @@
             description: "Crashes the Host's Game for Tower Defense 2 (May take a few tries)",
             run: function () {
                 function reactHandler() {
-                    return Object.values(document.querySelector('#app>div>div'))[1].children[0]._owner;
+                    return { stateNode: getGameState() };
                 }
 
 
@@ -3193,7 +3254,7 @@
                 type: "number"
             }],
             run: function (e) {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                getGameState().setState({
                     coins: e
                 })
             }
@@ -3205,7 +3266,7 @@
                 type: "number"
             }],
             run: function (e) {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                getGameState().setState({
                     health: e
                 })
             }
@@ -3217,7 +3278,7 @@
                 type: "number"
             }],
             run: function (e) {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                getGameState().setState({
                     round: e
                 })
             }
@@ -3257,11 +3318,7 @@
 
 
                             try {
-                                let {
-                                    stateNode
-                                } = Object.values((function react(r = document.querySelector("body>div")) {
-                                    return Object.values(r)[1]?.children?.[0]?._owner.stateNode ? r : react(r.querySelector(":scope>div"))
-                                })())[1].children[0]._owner;
+                                let stateNode = getGameState();
 
 
                                 if (stateNode.state.stage === "excavate") {
@@ -3379,12 +3436,7 @@
                         return a
                     };
                 this.enabled ? (this.enabled = !1, clearInterval(this.data), this.data = null) : (this.enabled = !0, this.data = setInterval(() => {
-                    let {
-                        stateNode: e
-                    } = Object.values(function e(t = document.querySelector("body>div")) {
-                        return Object.values(t)[1]?.children?.[0]?._owner.stateNode ? t : e(t.querySelector(":scope>div"))
-                    }
-                        ())[1].children[0]._owner,
+                    let e = getGameState(),
                         t = [...document.querySelector('[class*="rockButton"]').parentElement.children];
                     t.every(e => e.querySelector("div")) || e.setState({
                         choices: [{
@@ -3461,7 +3513,7 @@
                 type: "number"
             }],
             run: function (e) {
-                var t = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var t = getGameState();
                 t.setState({
                     fossils: e
                 }),
@@ -3482,7 +3534,7 @@
                 type: "number"
             }],
             run: function (e) {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                getGameState().setState({
                     fossilMult: e
                 })
             }
@@ -3491,7 +3543,7 @@
             description: "Crashes the Host's Game for Deceptive Dinos",
             run: function () {
                 function reactHandler() {
-                    return Object.values(document.querySelector('#app>div>div'))[1].children[0]._owner;
+                    return { stateNode: getGameState() };
                 }
 
 
@@ -3509,7 +3561,7 @@
             name: "Stop Cheating",
             description: "Undoes cheating so that you can't be caught",
             run: function () {
-                var e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var e = getGameState();
                 e.setState({
                     isCheating: !1
                 }),
@@ -3577,7 +3629,7 @@
                 document.body.append(e),
                     window.alert = e.contentWindow.alert.bind(window),
                     e.remove(),
-                    "/tower/map" == window.location.pathname ? (e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode).props.tower.cards.forEach(e => {
+                    "/tower/map" == window.location.pathname ? (e = getGameState()).props.tower.cards.forEach(e => {
                         e.strength = 20,
                             e.charisma = 20,
                             e.wisdom = 20
@@ -3591,7 +3643,7 @@
                 document.body.append(e),
                     window.alert = e.contentWindow.alert.bind(window),
                     e.remove(),
-                    "/tower/battle" == window.location.pathname ? Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                    "/tower/battle" == window.location.pathname ? getGameState().setState({
                         myHealth: 100
                     }) : alert("You need to be in battle to run this cheat!")
             }
@@ -3636,7 +3688,7 @@
                 var t = document.createElement("iframe");
                 if (document.body.append(t), window.alert = t.contentWindow.prompt.bind(window), t.remove(), "/tower/battle" == window.location.pathname) {
                     var t = parseInt("0" + alert("How many coins would you like?")),
-                        a = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                        a = getGameState();
                     try {
                         a.props.setTowerCoins(t)
                     } catch { }
@@ -3655,7 +3707,7 @@
                 document.body.append(t),
                     window.alert = t.contentWindow.alert.bind(window),
                     t.remove(),
-                    "/tower/battle" == window.location.pathname ? Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                    "/tower/battle" == window.location.pathname ? getGameState().setState({
                         myStreak: !0,
                         streak: e
                     }) : alert("You need to be in battle to run this cheat!")
@@ -4314,7 +4366,7 @@
             name: "Free Upgrades",
             description: "Sets upgrade prices to 0 for all current blooks",
             run: function () {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState(e => ({
+                getGameState().setState(e => ({
                     ...e,
                     blooks: e.blooks.map(e => ({
                         ...e,
@@ -4326,13 +4378,13 @@
             name: "Max Blooks",
             description: "Maxes out all your blooks' levels",
             run: function () {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.state.blooks.forEach(e => e.level = 4)
+                getGameState().state.blooks.forEach(e => e.level = 4)
             }
         }, {
             name: "Remove Glitches",
             description: "Removes all enemy glitches",
             run: function () {
-                var e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var e = getGameState();
                 e.setState({
                     bits: 0,
                     ads: [],
@@ -4381,7 +4433,7 @@
                 }))
             }],
             run: function (e) {
-                var t = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var t = getGameState();
                 t.safe = !0,
                     t.props.liveGameController.setVal({
                         path: `c/${t.props.client.name}/tat`,
@@ -4392,7 +4444,7 @@
             name: "Set All MegaBot",
             description: "Sets all your blooks to maxed out Mega Bots",
             run: function () {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                getGameState().setState({
                     blooks: Array(10).fill({
                         name: "Mega Bot",
                         color: "#d71f27",
@@ -4415,7 +4467,7 @@
                 type: "number"
             }],
             run: function (e) {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                getGameState().setState({
                     cash: e
                 })
             }
@@ -4481,7 +4533,7 @@
             data: null,
             run: function () {
                 this.enabled ? (this.enabled = !1, clearInterval(this.data), this.data = null) : (this.enabled = !0, this.data = setInterval(() => {
-                    Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                    getGameState().setState({
                         party: ""
                     })
                 }, 50))
@@ -4490,7 +4542,7 @@
             name: "Frenzy",
             description: "Sets everyone to frenzy mode",
             run: function () {
-                var e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var e = getGameState();
                 e.props.liveGameController.setVal({
                     path: "c/" + e.props.client.name,
                     val: {
@@ -4533,7 +4585,7 @@
                 max: 5
             }],
             run: function (e) {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                getGameState().setState({
                     lure: Math.max(Math.min(e - 1, 4), 0)
                 })
             }
@@ -4822,7 +4874,7 @@
                 type: "number"
             }],
             run: function (e) {
-                var t = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var t = getGameState();
                 t.setState({
                     weight: e,
                     weight2: e
@@ -4956,7 +5008,7 @@
             enabled: !1,
             data: null,
             run: function () {
-                let e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                let e = getGameState();
                 e._choosePrize ||= e.choosePrize,
                     this.enabled ? (this.enabled = !1, clearInterval(this.data), this.data = null, e.choosePrize = e._choosePrize || e.choosePrize) : (this.enabled = !0, this.data = setInterval(() => {
                         e.choosePrize = function (t) {
@@ -4977,7 +5029,7 @@
             enabled: !1,
             data: null,
             run: function () {
-                let e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                let e = getGameState();
                 e._choosePrize ||= e.choosePrize,
                     this.enabled ? (this.enabled = !1, clearInterval(this.data), this.data = null, e.choosePrize = e._choosePrize || e.choosePrize) : (this.enabled = !0, this.data = setInterval(() => {
                         e.choosePrize = function (t) {
@@ -5193,7 +5245,7 @@
                 name: "Player",
                 type: "options",
                 options() {
-                    let e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                    let e = getGameState();
                     return new Promise(t => e.props.liveGameController._liveApp ? e.props.liveGameController.getDatabaseVal("c", e => e && t(Object.keys(e))) : t([]))
                 }
             }],
@@ -5201,7 +5253,7 @@
                 var {
                     props: t,
                     state: a
-                } = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                } = getGameState();
                 t.liveGameController.setVal({
                     path: "c/".concat(t.client.name),
                     val: {
@@ -5219,7 +5271,7 @@
                 type: "number"
             }],
             run: function (e) {
-                var t = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var t = getGameState();
                 t.setState({
                     gold: e,
                     gold2: e
@@ -5239,12 +5291,12 @@
                 name: "Player",
                 type: "options",
                 options() {
-                    let e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                    let e = getGameState();
                     return new Promise(t => e.props.liveGameController._liveApp ? e.props.liveGameController.getDatabaseVal("c", e => e && t(Object.keys(e))) : t([]))
                 }
             }],
             run: function (e) {
-                let t = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                let t = getGameState();
                 t.props.liveGameController.getDatabaseVal("c", a => {
                     a?.[e] && (a = a[e].g, t.props.liveGameController.setVal({
                         path: "c/".concat(t.props.client.name),
@@ -5329,7 +5381,7 @@
                 let {
                     props: t,
                     state: a
-                } = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode,
+                } = getGameState(),
                     o = 0;
                 t.liveGameController.getDatabaseVal("c", async e => {
                     if (e)
@@ -5350,7 +5402,7 @@
             description: "Crashes the Host's Game for Gold Quest",
             run: function () {
                 function reactHandler() {
-                    return Object.values(document.querySelector('#app>div>div'))[1].children[0]._owner;
+                    return { stateNode: getGameState() };
                 }
 
 
@@ -5428,13 +5480,13 @@
             name: "Disable Tax Toucan",
             description: "Tax evasion",
             run: function () {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.taxCounter = Number.MAX_VALUE
+                getGameState().taxCounter = Number.MAX_VALUE
             }
         }, {
             name: "Max Stats",
             description: "Sets all resources to the max",
             run: function () {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                getGameState().setState({
                     materials: 100,
                     people: 100,
                     happiness: 100,
@@ -5449,7 +5501,7 @@
                 type: "number"
             }],
             run: function (e) {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                getGameState().setState({
                     guestScore: e
                 })
             }
@@ -5457,14 +5509,14 @@
             name: "Skip Guest",
             description: "Skips the current guest",
             run: function () {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.nextGuest()
+                getGameState().nextGuest()
             }
         }],
         racing: [{
             name: "Instant Win",
             description: "Instantly Wins the race",
             run: function () {
-                let e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                let e = getGameState();
                 e.setState({
                     progress: e.state.goalAmount
                 }, () => {
@@ -5875,7 +5927,7 @@
             description: "View messages players type in chat",
             run: function () {
                 function reactHandler() {
-                    return Object.values(document.querySelector('#app>div>div'))[1].children[0]._owner;
+                    return { stateNode: getGameState() };
                 }
 
 
@@ -6138,7 +6190,7 @@
             data: null,
             run: function () {
                 this.enabled ? (this.enabled = !1, clearInterval(this.data), this.data = null) : (this.enabled = !0, this.data = setInterval(() => {
-                    var e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                    var e = getGameState();
                     e?.onAnswer?.(!0, e.props.client.question.correctAnswers[0])
                 }, 50))
             }
@@ -6165,7 +6217,7 @@
                 type: "number"
             }],
             run: function (e) {
-                var t = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var t = getGameState();
                 t.setState({
                     numBlooks: e
                 }),
@@ -6187,7 +6239,7 @@
             }],
             run: function (e) {
                 var e = Math.min(e, 4),
-                    t = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                    t = getGameState();
                 t.setState({
                     numDefense: e
                 }),
@@ -6204,7 +6256,7 @@
             description: "They aint coming back with this one",
             run: function () {
                 var largeNumber = "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999";
-                var t = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var t = getGameState();
                 t.setState({
                     numBlooks: largeNumber
                 });
@@ -6225,7 +6277,7 @@
             name: "Remove Distractions",
             description: "Removes all enemy distractions",
             run: function () {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                getGameState().setState({
                     fog: !1,
                     dusk: !1,
                     wind: !1,
@@ -6258,7 +6310,7 @@
                 }))
             }],
             run: function (e) {
-                var t = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var t = getGameState();
                 t.safe = !0,
                     t.props.liveGameController.setVal({
                         path: `c/${t.props.client.name}/tat`,
@@ -6273,7 +6325,7 @@
                 type: "number"
             }],
             run: function (e) {
-                var t = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                var t = getGameState();
                 t.setState({
                     toys: e
                 }),
@@ -6293,7 +6345,7 @@
                 type: "number"
             }],
             run: function (e) {
-                Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode.setState({
+                getGameState().setState({
                     toysPerQ: e
                 })
             }
@@ -6304,12 +6356,12 @@
                 name: "Player",
                 type: "options",
                 options() {
-                    let e = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                    let e = getGameState();
                     return new Promise(t => e.props.liveGameController._liveApp ? e.props.liveGameController.getDatabaseVal("c", e => e && t(Object.keys(e))) : t([]))
                 }
             }],
             run: function (e) {
-                let t = Object.values(document.querySelector("body div[id] > div > div"))[1].children[0]._owner.stateNode;
+                let t = getGameState();
                 t.props.liveGameController.getDatabaseVal("c", a => {
                     var o;
                     a && Object.keys(a).map(e => e.toLowerCase()).includes(e.toLowerCase()) && ([a, {
@@ -6951,7 +7003,7 @@
 
 
                 function reactHandler() {
-                    return Object.values(document.querySelector('#app>div>div'))[1].children[0]._owner;
+                    return { stateNode: getGameState() };
                 }
 
 
