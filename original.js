@@ -2467,50 +2467,70 @@
             name: "Double Enemy XP",
             description: "Doubles enemy XP drop value",
             run: function () {
-                for (let e of getPhaserScene().physics.world.colliders._active.filter(e => e.callbackContext?.toString().includes("invulnerableTime"))) {
-                    var t = e.object2;
-                    let a = t.classType.prototype.start;
-                    t.classType.prototype.start = function () {
-                        a.apply(this, arguments),
-                            this.val *= 2
-                    },
-                        t.children.entries.forEach(e => e.val *= 2)
+                const enemies = getPhaserScene().physics.world.colliders._active.filter(e => e.callbackContext?.toString().includes("invulnerableTime"));
+                if (enemies && enemies.length > 0) {
+                    for (let e of enemies) {
+                        var t = e.object2;
+                        if (t && t.classType) {
+                            let a = t.classType.prototype.start;
+                            t.classType.prototype.start = function () {
+                                a.apply(this, arguments),
+                                    this.val *= 2
+                            },
+                                t.children.entries.forEach(e => e.val *= 2)
+                        }
+                    }
                 }
             }
         }, {
             name: "Half Enemy Speed",
             description: "Makes enemies move 2x slower",
             run: function () {
-                for (let e of getPhaserScene().physics.world.colliders._active.filter(e => e.callbackContext?.toString().includes("invulnerableTime"))) {
-                    var t = e.object2;
-                    let a = t.classType.prototype.start;
-                    t.classType.prototype.start = function () {
-                        a.apply(this, arguments),
-                            this.speed *= .5
-                    },
-                        t.children.entries.forEach(e => e.speed *= .5)
+                const enemies = getPhaserScene().physics.world.colliders._active.filter(e => e.callbackContext?.toString().includes("invulnerableTime"));
+                if (enemies && enemies.length > 0) {
+                    for (let e of enemies) {
+                        var t = e.object2;
+                        if (t && t.classType) {
+                            let a = t.classType.prototype.start;
+                            t.classType.prototype.start = function () {
+                                a.apply(this, arguments),
+                                    this.speed *= .5
+                            },
+                                t.children.entries.forEach(e => e.speed *= .5)
+                        }
+                    }
                 }
             }
         }, {
             name: "Instant Kill",
             description: "Sets all enemies health to 1",
             run: function () {
-                for (let e of getPhaserScene().physics.world.colliders._active.filter(e => e.callbackContext?.toString().includes("invulnerableTime"))) {
-                    var t = e.object2;
-                    let a = t.classType.prototype.start;
-                    t.classType.prototype.start = function () {
-                        a.apply(this, arguments),
-                            this.hp = 1
-                    },
-                        t.children.entries.forEach(e => e.hp = 1)
+                const enemies = getPhaserScene().physics.world.colliders._active.filter(e => e.callbackContext?.toString().includes("invulnerableTime"));
+                if (enemies && enemies.length > 0) {
+                    for (let e of enemies) {
+                        var t = e.object2;
+                        if (t && t.classType) {
+                            let a = t.classType.prototype.start;
+                            t.classType.prototype.start = function () {
+                                a.apply(this, arguments),
+                                    this.hp = 1
+                            },
+                                t.children.entries.forEach(e => e.hp = 1)
+                        }
+                    }
                 }
             }
         }, {
             name: "Invincibility",
             description: "Makes you invincible",
             run: function () {
-                for (let e of getPhaserScene().physics.world.colliders._active.filter(e => e.callbackContext?.toString().includes("invulnerableTime")))
-                    e.collideCallback = () => { }
+                const playerColliders = getPhaserScene().physics.world.colliders._active.filter(e => e.callbackContext?.toString().includes("invulnerableTime"));
+                if (playerColliders && playerColliders.length > 0) {
+                    for (let e of playerColliders)
+                        e.collideCallback = () => { }
+                } else {
+                    console.warn("Invincibility collider not found. You may need to take damage once first.");
+                }
             }
         }, {
             name: "Magnet",
