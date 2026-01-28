@@ -66,6 +66,26 @@
 
             let res = search(document.querySelector("body > div"), 0);
             if (res) return res;
+            if (node.stateNode && node.stateNode.setState) return node.stateNode;
+
+            // Fallback: Try to derive state from the TRAPPED Phaser Game
+            // The Phaser game is often a child of the React Component that holds the state.
+            // game.canvas -> DOM -> React Fiber -> Traverse Up -> Found State
+            if (window.__cheat_trap_game && window.__cheat_trap_game.canvas) {
+                const canvas = window.__cheat_trap_game.canvas;
+                const key = Object.keys(canvas).find(k => k.startsWith("__reactFiber"));
+                if (key) {
+                    let fiber = canvas[key];
+                    let depth = 0;
+                    while (fiber && depth < 10) {
+                        if (fiber.stateNode && fiber.stateNode.setState && fiber.stateNode.state) {
+                            return fiber.stateNode;
+                        }
+                        fiber = fiber.return;
+                        depth++;
+                    }
+                }
+            }
 
             return {};
         } catch (e) {
