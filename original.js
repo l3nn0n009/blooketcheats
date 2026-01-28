@@ -66,7 +66,6 @@
 
             let res = search(document.querySelector("body > div"), 0);
             if (res) return res;
-            if (node.stateNode && node.stateNode.setState) return node.stateNode;
 
             // Fallback: Try to derive state from the TRAPPED Phaser Game
             // The Phaser game is often a child of the React Component that holds the state.
