@@ -2497,13 +2497,23 @@
             name: "Magnet",
             description: "Pulls all xp towards you",
             run: function () {
-                getPhaserScene().physics.world.colliders._active.find(e => e.collideCallback?.toString().includes("magnetTime")).collideCallback({
-                    active: !0
-                }, {
-                    active: !0,
-                    setActive() { },
-                    setVisible() { }
-                })
+                const magnetCollider = getPhaserScene().physics.world.colliders._active.find(e => e.collideCallback?.toString().includes("magnetTime"));
+                if (magnetCollider) {
+                    magnetCollider.collideCallback({
+                        active: !0
+                    }, {
+                        active: !0,
+                        setActive() { },
+                        setVisible() { }
+                    });
+                } else {
+                    // Fallback mechanism: Try to find ANY pickup collider if specific magnet one is missing
+                    console.warn("Magnet collider not found by name. Trying generic pickup search...");
+                    const genericPickup = getPhaserScene().physics.world.colliders._active.find(e => e.object1?.texture?.key === "xp" || e.object2?.texture?.key === "xp");
+                    if (genericPickup && genericPickup.collideCallback) {
+                        genericPickup.collideCallback({ active: !0 }, { active: !0, setActive() { }, setVisible() { } });
+                    }
+                }
             }
         }, {
             name: "Max Current Abilities",
