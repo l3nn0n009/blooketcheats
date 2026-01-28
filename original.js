@@ -2464,12 +2464,16 @@
             description: "Maxes out all your current abilities",
             run: function () {
                 let e = getGameState();
-                for (var [t, a] of Object.entries(e.state.abilities))
-                    for (let o = 0; o < 10 - a; o++)
-                        e.game.current.scene.scenes[0].game.events.emit("level up", t, e.state.abilities[t]++);
-                e.setState({
-                    level: e.game.current.scene.scenes[0].level = [1, 3, 5, 10, 15, 25, 35].sort((t, a) => Math.abs(t - e.state.level) - Math.abs(a - e.state.level))[0] - 1
-                })
+                if (!e || !e.state || !e.state.abilities) return; // Safety check
+
+                try {
+                    for (var [t, a] of Object.entries(e.state.abilities))
+                        for (let o = 0; o < 10 - a; o++)
+                            e.game.current.scene.scenes[0].game.events.emit("level up", t, e.state.abilities[t]++);
+                    e.setState({
+                        level: e.game.current.scene.scenes[0].level = [1, 3, 5, 10, 15, 25, 35].sort((t, a) => Math.abs(t - e.state.level) - Math.abs(a - e.state.level))[0] - 1
+                    })
+                } catch (err) { console.error(err); }
             }
         }, {
             name: "Next Level",
