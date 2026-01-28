@@ -161,13 +161,17 @@
                 // Return the first active game that has scenes
                 for (let game of window.Phaser.GAMES) {
                     if (game.scene && game.scene.scenes && game.scene.scenes.length > 0) {
-                        // Priority 1: Find a scene that is both visible and active (the actual game level)
+                        // Priority 1: Find a scene with PHYSICS WORLD (Crucial for Monster Brawl cheats)
+                        const physicsScene = game.scene.scenes.find(s => s.physics && s.physics.world);
+                        if (physicsScene) return physicsScene;
+
+                        // Priority 2: Find a scene that is both visible and active
                         const runningScene = game.scene.scenes.find(s =>
                             s.sys && s.sys.settings && s.sys.settings.active && s.sys.settings.visible
                         );
                         if (runningScene) return runningScene;
 
-                        // Priority 2: Find just an active scene (maybe logic only)
+                        // Priority 3: Find just an active scene (maybe logic only)
                         const activeScene = game.scene.scenes.find(s => s.sys && s.sys.settings && s.sys.settings.active);
                         if (activeScene) return activeScene;
 
