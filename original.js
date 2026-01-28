@@ -155,6 +155,17 @@
                     }
                 } catch (e) { }
             }
+            // 5. Try Phaser global repository (Confirmed Phaser v3.90.0 exists)
+            if (window.Phaser && window.Phaser.GAMES && window.Phaser.GAMES.length > 0) {
+                for (let game of window.Phaser.GAMES) {
+                    if (game.scene && game.scene.scenes && game.scene.scenes.length > 0) {
+                        // Find the active running scene
+                        const activeScene = game.scene.scenes.find(s => s.sys && s.sys.settings && s.sys.settings.active);
+                        if (activeScene) return activeScene;
+                        return game.scene.scenes[0];
+                    }
+                }
+            }
 
         } catch (e) {
             console.error("error searching for scene", e);
