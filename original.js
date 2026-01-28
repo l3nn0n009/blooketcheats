@@ -76,12 +76,52 @@
 
     function getPhaserScene() {
         try {
+            // 1. Try standard Game State path
             const state = getGameState();
             const scene = state?.game?.current?.scene?.scenes?.[0];
             if (scene) return scene;
+        } catch (e) { }
+
+        try {
+            // 2. Try global window search for Phaser Game
+            function isPhaserGame(obj) {
+                return obj && typeof obj === 'object' && obj.scene && obj.loop && obj.config;
+            }
+
+            if (window.phaserGame && isPhaserGame(window.phaserGame)) return window.phaserGame.scene.scenes[0];
+            if (window.game && isPhaserGame(window.game)) return window.game.scene.scenes[0];
+
+            // Deep search window
+            let seen = new Set([window, document]);
+            function searchWindow(startObj, depth) {
+                if (depth > 2) return null;
+                try {
+                    for (let key of Object.getOwnPropertyNames(startObj)) {
+                        if (key.startsWith("webpack") || key.startsWith("CSS") || key.startsWith("__") || key === "frames" || key === "self" || key === "parent" || key === "top") continue;
+                        try {
+                            const val = startObj[key];
+                            if (val && typeof val === 'object' && !seen.has(val)) {
+                                seen.add(val);
+                                if (isPhaserGame(val)) return val.scene.scenes[0];
+                                if (depth < 1) { // Limited depth recursion
+                                    let deeper = searchWindow(val, depth + 1);
+                                    if (deeper) return deeper;
+                                }
+                            }
+                        } catch (e) { }
+                    }
+                } catch (e) { }
+                return null;
+            }
+
+            // Only run global search if absolutely needed
+            let globalScene = searchWindow(window, 0);
+            if (globalScene) return globalScene;
+
         } catch (e) {
-            console.error("error getting scene", e);
+            console.error("error searching for scene", e);
         }
+
         console.warn("Blooket Cheats: Phaser Scene not found. Returning shim.");
         return {
             physics: {
