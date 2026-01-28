@@ -121,7 +121,31 @@
             let globalScene = searchRoot(window);
             if (globalScene) return globalScene;
 
-            // 3. Check all iframes
+            // 3. Try to find game via Canvas (React Fiber on Canvas)
+            // This is very effective for React-wrapped Phaser games
+            const canvases = document.querySelectorAll("canvas");
+            for (let canvas of canvases) {
+                const key = Object.keys(canvas).find(k => k.startsWith("__reactFiber") || k.startsWith("__reactInternalInstance"));
+                if (key && canvas[key]) {
+                    let fiber = canvas[key];
+                    // Traverse fiber to find 'game' prop
+                    let depth = 0;
+                    while (fiber && depth < 15) {
+                        if (fiber.memoizedProps?.game) {
+                            let game = fiber.memoizedProps.game;
+                            if (game.scene && game.scene.scenes) return game.scene.scenes[0];
+                        }
+                        if (fiber.stateNode?.game) {
+                            let game = fiber.stateNode.game;
+                            if (game.scene && game.scene.scenes) return game.scene.scenes[0];
+                        }
+                        fiber = fiber.return;
+                        depth++;
+                    }
+                }
+            }
+
+            // 4. Check all iframes
             const iframes = document.querySelectorAll("iframe");
             for (let iframe of iframes) {
                 try {
@@ -2451,12 +2475,20 @@
             name: "Next Level",
             description: "Skips to the next level",
             run: function () {
-                var e = getGameState(),
-                    {
-                        object1: t,
-                        object2: a
-                    } = e.game.current.scene.scenes[0].physics.world.colliders._active.find(e => e.collideCallback?.toString().includes('emit("xp"'));
-                a.get().spawn(t.x, t.y, (1 === (a = e.state.level) ? 1 : a < 5 ? 5 : a < 10 ? 10 : a < 20 ? 20 : a < 30 ? 30 : a < 40 ? 40 : a < 50 ? 50 : 100) - e.xp)
+                var state = getGameState();
+                var scene = getPhaserScene(); // Safe wrapper
+
+                // Safety check to prevent crash if state or scene is missing
+                if (!state || !state.state || !scene || !scene.physics) return;
+
+                var found = scene.physics.world.colliders._active.find(e => e.collideCallback?.toString().includes('emit("xp"'));
+                if (!found) return;
+
+                var { object1: t, object2: a } = found;
+                var currentLevel = state.state.level;
+                var xpNeeded = (currentLevel === 1 ? 1 : currentLevel < 5 ? 5 : currentLevel < 10 ? 10 : currentLevel < 20 ? 20 : currentLevel < 30 ? 30 : currentLevel < 40 ? 40 : currentLevel < 50 ? 50 : 100);
+
+                a.get().spawn(t.x, t.y, xpNeeded - state.xp);
             }
         }, {
             name: "Remove Obstacles",
