@@ -155,7 +155,14 @@
                     }
                 } catch (e) { }
             }
-            // 5. Try Phaser global repository (if available)
+            // 5. Try "Trapped" Game Instance (From trap_game.js)
+            const trapGame = window.__cheat_trap_game;
+            if (trapGame && trapGame.scene && trapGame.scene.scenes.length > 0) {
+                const physicsScene = trapGame.scene.scenes.find(s => s.physics && s.physics.world);
+                if (physicsScene) return physicsScene;
+            }
+
+            // 6. Try Phaser global repository (if available)
             if (window.Phaser && window.Phaser.GAMES && window.Phaser.GAMES.length > 0) {
                 for (let game of window.Phaser.GAMES) {
                     if (game.scene && game.scene.scenes && game.scene.scenes.length > 0) {
@@ -165,7 +172,7 @@
                 }
             }
 
-            // 6. Deep DOM Crawl (Canvas Parent Inspection) - The "Nuclear Option"
+            // 7. Deep DOM Crawl (Canvas Parent Inspection) - The "Nuclear Option"
             // Blooket hides Phaser.GAMES, and Canvas has no keys.
             // WE MUST CRAWL UP FROM CANVAS TO FIND A REACT PARENT.
             const canvases = document.querySelectorAll("canvas");
