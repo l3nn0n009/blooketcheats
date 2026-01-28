@@ -88,35 +88,49 @@
                 return obj && typeof obj === 'object' && obj.scene && obj.loop && obj.config;
             }
 
-            if (window.phaserGame && isPhaserGame(window.phaserGame)) return window.phaserGame.scene.scenes[0];
-            if (window.game && isPhaserGame(window.game)) return window.game.scene.scenes[0];
+            function searchRoot(rootWindow) {
+                if (rootWindow.phaserGame && isPhaserGame(rootWindow.phaserGame)) return rootWindow.phaserGame.scene.scenes[0];
+                if (rootWindow.game && isPhaserGame(rootWindow.game)) return rootWindow.game.scene.scenes[0];
 
-            // Deep search window
-            let seen = new Set([window, document]);
-            function searchWindow(startObj, depth) {
-                if (depth > 2) return null;
-                try {
-                    for (let key of Object.getOwnPropertyNames(startObj)) {
-                        if (key.startsWith("webpack") || key.startsWith("CSS") || key.startsWith("__") || key === "frames" || key === "self" || key === "parent" || key === "top") continue;
-                        try {
-                            const val = startObj[key];
-                            if (val && typeof val === 'object' && !seen.has(val)) {
-                                seen.add(val);
-                                if (isPhaserGame(val)) return val.scene.scenes[0];
-                                if (depth < 1) { // Limited depth recursion
-                                    let deeper = searchWindow(val, depth + 1);
-                                    if (deeper) return deeper;
+                // Deep search in this window
+                let seen = new Set([rootWindow, rootWindow.document]);
+                function searchWindow(startObj, depth) {
+                    if (depth > 2) return null;
+                    try {
+                        for (let key of Object.getOwnPropertyNames(startObj)) {
+                            if (key.startsWith("webpack") || key.startsWith("CSS") || key.startsWith("__") || key === "frames" || key === "self" || key === "parent" || key === "top") continue;
+                            try {
+                                const val = startObj[key];
+                                if (val && typeof val === 'object' && !seen.has(val)) {
+                                    seen.add(val);
+                                    if (isPhaserGame(val)) return val.scene.scenes[0];
+                                    if (depth < 1) {
+                                        let deeper = searchWindow(val, depth + 1);
+                                        if (deeper) return deeper;
+                                    }
                                 }
-                            }
-                        } catch (e) { }
-                    }
-                } catch (e) { }
-                return null;
+                            } catch (e) { }
+                        }
+                    } catch (e) { }
+                    return null;
+                }
+                return searchWindow(rootWindow, 0);
             }
 
-            // Only run global search if absolutely needed
-            let globalScene = searchWindow(window, 0);
+            // Check main window
+            let globalScene = searchRoot(window);
             if (globalScene) return globalScene;
+
+            // 3. Check all iframes
+            const iframes = document.querySelectorAll("iframe");
+            for (let iframe of iframes) {
+                try {
+                    if (iframe.contentWindow) {
+                        let iframeScene = searchRoot(iframe.contentWindow);
+                        if (iframeScene) return iframeScene;
+                    }
+                } catch (e) { }
+            }
 
         } catch (e) {
             console.error("error searching for scene", e);
