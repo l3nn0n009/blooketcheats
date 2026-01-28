@@ -175,8 +175,8 @@
             // 7. Deep DOM Crawl (Canvas Parent Inspection) - The "Nuclear Option"
             // Blooket hides Phaser.GAMES, and Canvas has no keys.
             // WE MUST CRAWL UP FROM CANVAS TO FIND A REACT PARENT.
-            const canvases = document.querySelectorAll("canvas");
-            for (let canvas of canvases) {
+            const canvasList = document.querySelectorAll("canvas");
+            for (let canvas of canvasList) {
                 let currentNode = canvas;
                 // Crawl up 5 levels
                 for (let i = 0; i < 5; i++) {
