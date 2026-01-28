@@ -155,16 +155,43 @@
                     }
                 } catch (e) { }
             }
-            // 5. Try Phaser global repository (Confirmed Phaser v3.90.0 exists)
-            // The game IS created via new Phaser.Game, so it MUST be in this array eventually.
-            if (window.Phaser && window.Phaser.GAMES) {
-                // Return the first active game that has scenes
+            // 5. Try Phaser global repository (if available)
+            if (window.Phaser && window.Phaser.GAMES && window.Phaser.GAMES.length > 0) {
                 for (let game of window.Phaser.GAMES) {
                     if (game.scene && game.scene.scenes && game.scene.scenes.length > 0) {
-                        // Priority 1: Find a scene with PHYSICS WORLD (Crucial for Monster Brawl cheats)
                         const physicsScene = game.scene.scenes.find(s => s.physics && s.physics.world);
                         if (physicsScene) return physicsScene;
                     }
+                }
+            }
+
+            // 6. Deep DOM Crawl (Canvas Parent Inspection) - The "Nuclear Option"
+            // Blooket hides Phaser.GAMES, and Canvas has no keys.
+            // WE MUST CRAWL UP FROM CANVAS TO FIND A REACT PARENT.
+            const canvases = document.querySelectorAll("canvas");
+            for (let canvas of canvases) {
+                let currentNode = canvas;
+                // Crawl up 5 levels
+                for (let i = 0; i < 5; i++) {
+                    if (!currentNode) break;
+
+                    const fiberKey = Object.keys(currentNode).find(k => k.startsWith("__reactFiber") || k.startsWith("__reactInternalInstance"));
+                    if (fiberKey) {
+                        let fiber = currentNode[fiberKey];
+                        // Fiber found! Traverse up fiber tree.
+                        let depth = 0;
+                        while (fiber && depth < 20) {
+                            let possibleGame = fiber.memoizedProps?.game || fiber.stateNode?.game || fiber.memoizedProps?.value?.game;
+                            if (possibleGame && possibleGame.scene) {
+                                // Found the game instance!
+                                const physicsScene = possibleGame.scene.scenes.find(s => s.physics && s.physics.world);
+                                if (physicsScene) return physicsScene;
+                            }
+                            fiber = fiber.return;
+                            depth++;
+                        }
+                    }
+                    currentNode = currentNode.parentElement;
                 }
             }
 
